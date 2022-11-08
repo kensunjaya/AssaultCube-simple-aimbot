@@ -89,25 +89,27 @@ int main()
         samping = player_X - enemy_X;
         depan = player_Y - enemy_Y;
         jarak = sqrt(pow(depan, 2) + pow(samping, 2)); // pythagoras
+        
+        // determine vertical aiming angle
         deltaH = player_Z - enemy_Z;
         tangen = deltaH / jarak;
         sudut = -1 * (atan(tangen) * 180 / pi);
-
+        
+        
         ReadProcessMemory(pHandle, (LPCVOID)playerBase, &memAddress, sizeof(memAddress), 0);
         memAddress = memAddress + offset.vertical;
         WriteProcessMemory(pHandle, (void*)memAddress, &sudut, sizeof(sudut), 0);
-
+        
+        // determine horizontal aiming angle
         tangen = depan / samping; // tangent basic formula
 
         sudut = finalAngle(player_X, player_Y, enemy_X, enemy_Y, ((atan(tangen) * 180 / pi) + 90));
-
 
         //cout << sudut << "\n";
         ReadProcessMemory(pHandle, (LPCVOID)playerBase, &memAddress, sizeof(memAddress), 0);
         memAddress = memAddress + offset.horizontal;
         WriteProcessMemory(pHandle, (void*)memAddress, &sudut, sizeof(sudut), 0);
 
-        Sleep(1);
     }
     return 0;
 }
