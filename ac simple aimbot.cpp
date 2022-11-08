@@ -8,9 +8,9 @@ DWORD playerBase = 0x57E254; // This one is static
 DWORD enemyBase = 0x8CA190;  // change this with enemy's base address
 
 struct {
-    DWORD horizontal = 0x34;
+    DWORD horizontal = 0x34; // vertical & horizontal axis (crosshair angle)
     DWORD vertical = 0x38;
-    DWORD x = 0x4;
+    DWORD x = 0x4; // x,y,z entity coordinate
     DWORD y = 0x8;
     DWORD z = 0xC;
 } offset;
@@ -21,7 +21,6 @@ const float pi = 3.14159265;
 float player_X, player_Y, player_Z, enemy_X, enemy_Y, enemy_Z, samping, depan, jarak, sudut, tangen, deltaH;
 
 long value;
-long temporaryValue;
 int memAddress;
 
 
@@ -49,9 +48,7 @@ float finalAngle(float pX, float pY, float eX, float eY, float p_angle) {
             hasilakhir = p_angle;
         }
         else {
-            
             hasilakhir = 180 + p_angle;
-            cout << "+ 180" << "\n";
         }
         
     }
@@ -91,7 +88,7 @@ int main()
 
         samping = player_X - enemy_X;
         depan = player_Y - enemy_Y;
-        jarak = sqrt(pow(depan, 2) + pow(samping, 2));
+        jarak = sqrt(pow(depan, 2) + pow(samping, 2)); // pythagoras
         deltaH = player_Z - enemy_Z;
         tangen = deltaH / jarak;
         sudut = -1 * (atan(tangen) * 180 / pi);
@@ -100,7 +97,7 @@ int main()
         memAddress = memAddress + offset.vertical;
         WriteProcessMemory(pHandle, (void*)memAddress, &sudut, sizeof(sudut), 0);
 
-        tangen = depan / samping;
+        tangen = depan / samping; // tangent basic formula
 
         sudut = finalAngle(player_X, player_Y, enemy_X, enemy_Y, ((atan(tangen) * 180 / pi) + 90));
 
