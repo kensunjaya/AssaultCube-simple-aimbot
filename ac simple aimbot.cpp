@@ -56,7 +56,7 @@ float finalAngle(float pX, float pY, float eX, float eY, float p_angle) {
     return hasilakhir;
 }
 
-void sendInput() {
+void sendInput() {   // simulate mouse click (not used yet)
     INPUT inpt;
     inpt.type = INPUT_KEYBOARD;
     inpt.ki.time = 0;
