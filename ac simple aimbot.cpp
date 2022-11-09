@@ -3,14 +3,16 @@
 #include <math.h>
 
 using namespace std;
+
 DWORD pid;
 DWORD playerBase = 0x57E254; // This one is static
-DWORD enemyBase = 0x8CA190;  // change this with enemy's base address
+DWORD enemyBase = 0x06DEAE18;  // change this with enemy's base address
 
 struct {
-    DWORD horizontal = 0x34; // vertical & horizontal axis (crosshair angle)
+    DWORD health = 0xEC;
+    DWORD horizontal = 0x34;
     DWORD vertical = 0x38;
-    DWORD x = 0x4; // x,y,z entity coordinate
+    DWORD x = 0x4;
     DWORD y = 0x8;
     DWORD z = 0xC;
 } offset;
@@ -21,7 +23,9 @@ const float pi = 3.14159265;
 float player_X, player_Y, player_Z, enemy_X, enemy_Y, enemy_Z, samping, depan, jarak, sudut, tangen, deltaH;
 
 long value;
+long temporaryValue;
 int memAddress;
+long enemyHealth;
 
 
 float floatRPM(HANDLE process, LPCVOID baseAddr, DWORD ptrOffset) {
@@ -36,6 +40,16 @@ float floatRPM(HANDLE process, LPCVOID baseAddr, DWORD ptrOffset) {
     return a;
 }
 
+long intRPM(HANDLE process, LPCVOID baseAddr, DWORD ptrOffset) {
+    long inputBuffer;
+    ReadProcessMemory(process, baseAddr, &inputBuffer, sizeof(inputBuffer), 0);
+    memAddress = inputBuffer + ptrOffset;
+
+    ReadProcessMemory(process, (LPCVOID)memAddress, &inputBuffer, sizeof(inputBuffer), 0);
+
+    return inputBuffer;
+}
+
 float finalAngle(float pX, float pY, float eX, float eY, float p_angle) {
     float hasilakhir;
 
@@ -47,27 +61,12 @@ float finalAngle(float pX, float pY, float eX, float eY, float p_angle) {
         if ((pY > eY) && (pX < eX)) {
             hasilakhir = p_angle;
         }
-        else {
+        else {     
             hasilakhir = 180 + p_angle;
         }
         
     }
-
     return hasilakhir;
-}
-
-void sendInput() {   // simulate mouse click (not used yet)
-    INPUT inpt;
-    inpt.type = INPUT_KEYBOARD;
-    inpt.ki.time = 0;
-    inpt.ki.wVk = 0;
-    inpt.ki.dwExtraInfo = 0;
-    inpt.ki.dwFlags = KEYEVENTF_SCANCODE;
-    inpt.ki.wScan = 0x19;
-    SendInput(1, &inpt, sizeof(INPUT));
-    Sleep(25);
-    inpt.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
-    SendInput(1, &inpt, sizeof(INPUT));
 }
 
 int main()
@@ -85,31 +84,32 @@ int main()
         enemy_Y = floatRPM(pHandle, (LPCVOID)enemyBase, offset.y);
         player_Z = floatRPM(pHandle, (LPCVOID)playerBase, offset.z);
         enemy_Z = floatRPM(pHandle, (LPCVOID)enemyBase, offset.z);
+        enemyHealth = intRPM(pHandle, (LPCVOID)enemyBase, offset.health);
+        cout << enemyHealth << "\n";
+        if ((enemyHealth > 0) && (enemyHealth < 1000)) {     // if enemy is alive
+            samping = player_X - enemy_X;
+            depan = player_Y - enemy_Y;
+            jarak = sqrt(pow(depan, 2) + pow(samping, 2));
+            deltaH = player_Z - enemy_Z;
+            tangen = deltaH / jarak;
+            sudut = -1 * (atan(tangen) * 180 / pi);
 
-        samping = player_X - enemy_X;
-        depan = player_Y - enemy_Y;
-        jarak = sqrt(pow(depan, 2) + pow(samping, 2)); // pythagoras
-        
-        // determine vertical aiming angle
-        deltaH = player_Z - enemy_Z;
-        tangen = deltaH / jarak;
-        sudut = -1 * (atan(tangen) * 180 / pi);
-        
-        
-        ReadProcessMemory(pHandle, (LPCVOID)playerBase, &memAddress, sizeof(memAddress), 0);
-        memAddress = memAddress + offset.vertical;
-        WriteProcessMemory(pHandle, (void*)memAddress, &sudut, sizeof(sudut), 0);
-        
-        // determine horizontal aiming angle
-        tangen = depan / samping; // tangent basic formula
+            ReadProcessMemory(pHandle, (LPCVOID)playerBase, &memAddress, sizeof(memAddress), 0);
+            memAddress = memAddress + offset.vertical;
+            WriteProcessMemory(pHandle, (void*)memAddress, &sudut, sizeof(sudut), 0);
 
-        sudut = finalAngle(player_X, player_Y, enemy_X, enemy_Y, ((atan(tangen) * 180 / pi) + 90));
+            tangen = depan / samping;
 
-        //cout << sudut << "\n";
-        ReadProcessMemory(pHandle, (LPCVOID)playerBase, &memAddress, sizeof(memAddress), 0);
-        memAddress = memAddress + offset.horizontal;
-        WriteProcessMemory(pHandle, (void*)memAddress, &sudut, sizeof(sudut), 0);
+            sudut = finalAngle(player_X, player_Y, enemy_X, enemy_Y, ((atan(tangen) * 180 / pi) + 90));
 
+
+            //cout << sudut << "\n";
+            ReadProcessMemory(pHandle, (LPCVOID)playerBase, &memAddress, sizeof(memAddress), 0);
+            memAddress = memAddress + offset.horizontal;
+            WriteProcessMemory(pHandle, (void*)memAddress, &sudut, sizeof(sudut), 0);
+        }
+
+        //Sleep(1);
     }
     return 0;
 }
